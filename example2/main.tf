@@ -1,7 +1,41 @@
-# Create a new load balancer
-resource "aws_elb" "example-lb" {
-  name               = "udemy-terraform-elb"
-  availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+data "aws_elb_service_account" "main" {}
+
+resource "aws_s3_bucket" "elb_logs" {
+  bucket = "udemy-elb-logging-test123"
+  acl    = "private"
+
+  policy = <<POLICY
+{
+  "Id": "Policy",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::udemy-elb-logging-test123/AWSLogs/*",
+      "Principal": {
+        "AWS": [
+          "${data.aws_elb_service_account.main.arn}"
+        ]
+      }
+    }
+  ]
+}
+POLICY
+}
+
+resource "aws_elb" "bar" {
+  name               = "my-foobar-terraform-elb"
+  availability_zones = ["us-west-2a","us-west-2b","us-west-2c"]
+
+  access_logs {
+    bucket   = "${aws_s3_bucket.elb_logs.bucket}"
+    interval = 5
+  }
+
+  instances = ["i-061520afcb0e42931"]
 
   listener {
     instance_port     = 8000
@@ -9,20 +43,4 @@ resource "aws_elb" "example-lb" {
     lb_port           = 80
     lb_protocol       = "http"
   }
-
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    target              = "HTTP:80/index.html"
-    interval            = 30
-  }
-
-  instances                   = ["i-0332b6c00999bc7a2"]
-  cross_zone_load_balancing   = true
-  idle_timeout                = 400
-  connection_draining         = true
-  connection_draining_timeout = 400
-
-  
 }

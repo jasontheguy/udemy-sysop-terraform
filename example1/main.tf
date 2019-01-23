@@ -63,6 +63,7 @@ resource "aws_key_pair" "sysop-keypair" {
 resource "aws_instance" "udemy" {
   ami           = "ami-03c652d3a09856345"
   instance_type = "t2.micro"
+  count = 2
   security_groups = ["${aws_security_group.allow_all.name}"]
   key_name = "${aws_key_pair.sysop-keypair.key_name}"
   iam_instance_profile = "${aws_iam_instance_profile.test.name}"
@@ -82,8 +83,7 @@ resource "aws_instance" "udemy" {
 }
 
 output "ip" {
-  value = "${aws_instance.udemy.public_ip}"
+  value = "${aws_instance.udemy.*.public_ip}" //Splat will output all
 }
-
 
 
